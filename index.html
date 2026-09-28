@@ -143,70 +143,293 @@ window.tgOpenSection=async function(key){
     return;
   }
 
-  if(key==='listings'){
-    const c=client();
-    const u=await user();
+ if(key==='listados'){
+  const c=client();
+  const u=await user();
 
-    if(!c||!u){
-      simple('Mis anuncios','Inicia sesión para gestionar tus anuncios.');
-      return;
-    }
-
-const {data,error}=await c.from('listings')
-  .select('id,cantidad,precio,datos_entrada,description,estado,created_at,events(nombre,recinto,ciudad,fecha_evento)')
-  .eq('user_id',u.id)
-  .order('created_at',{ascending:false});
-
-    if(error){
-      simple('Mis anuncios','No se pudieron cargar tus anuncios: '+error.message);
-      return;
-    }
-
-    if(!data||!data.length){
-      simple('Mis anuncios','Todavía no tienes anuncios.');
-      return;
-    }
-
-    panel.innerHTML='<h2>🎟️ Mis anuncios</h2><p>Gestiona tus entradas publicadas.</p>'+
-      data.map(a=>{
-        const ev=a.events||{};
-        const d=a.datos_entrada||{};
-        const fecha=ev.fecha_evento
-          ? new Date(ev.fecha_evento).toLocaleString('es-ES',{dateStyle:'medium',timeStyle:'short'})
-          : '';
-
-        return `
-          <div class="tg-account-panel" style="margin-top:18px;border:1px solid #353535;border-radius:14px;padding:18px;">
-            <h3>${ev.nombre||'Evento'}</h3>
-            <p>${ev.recinto||''}${ev.ciudad?' · '+ev.ciudad:''}</p>
-            ${fecha?`<p>📅 ${fecha}</p>`:''}
-            <p><strong>${a.cantidad} entrada${a.cantidad===1?'':'s'}</strong> · <strong>${Number(a.precio).toFixed(2)} €</strong></p>
-            ${d.sector?`<div>📍 Sector/Zona: ${d.sector}</div>`:''}
-            ${d.fila?`<div>↔️ Fila: ${d.fila}</div>`:''}
-            ${d.asiento?`<div>💺 Asiento: ${d.asiento}</div>`:''}
-            ${d.tipo_entrada?`<div>🎟️ Tipo: ${d.tipo_entrada}</div>`:''}
-            ${d.entrega?`<div>📦 Entrega: ${d.entrega}</div>`:''}
-            <div style="margin-top:8px;">Estado: <strong>${a.estado}</strong></div>
-            ${a.descripcion?`<p>${a.descripcion}</p>`:''}
-          </div>
-        `;
-      }).join('');
-
+  if(!u){
+    simple('Mis anuncios','Inicia sesión para gestionar tus anuncios.');
     return;
   }
 
-  const m={
-    sales:['Mis ventas','Consulta tus ventas.'],
-    payouts:['Pagos por recibir','Consulta tus pagos pendientes y recibidos.'],
-    purchases:['Mis compras','Consulta tus compras.'],
-    payments:['Métodos de pago','Gestiona tus métodos de pago.'],
-    notifications:['Notificaciones','Gestiona tus notificaciones.'],
-    favorites:['Favoritos','Consulta tus favoritos.'],
-    security:['Seguridad','Gestiona contraseña y sesiones.'],
-    documents:['Documentos','Consulta tus facturas y comprobantes.']
+  const {data,error}=await c
+    .from('listings')
+    .select('id,listing_number,cantidad,precio,datos_entrada,descripcion,estado,created_at,updated_at,events(nombre,recinto,ciudad,fecha_evento)')
+    .eq('user_id',u.id)
+    .order('created_at',{ascending:false});
+
+  if(error){
+    simple('Mis anuncios','No se pudieron cargar tus anuncios: '+error.message);
+    return;
+  }
+
+  const anuncios=data||[];
+
+  const formatoFecha=(valor)=>{
+    if(!valor) return 'Fecha pendiente';
+    return new Date(valor).toLocaleDateString('es-ES',{
+      day:'2-digit',
+      month:'2-digit',
+      year:'numeric'
+    });
   };
 
-  const n=m[key]||['Mi cuenta','Selecciona una sección.'];
+  const estadoTexto=(estado)=>{
+    const e=(estado||'borrador').toLowerCase();
+    if(e==='activo') return 'Activo';
+    if(e==='pausado') return 'Pausado';
+    if(e==='vendido') return 'Vendido';
+    if(e==='finalizado') return 'Finalizado';
+    return 'Borrador';
+  };
+
+  const estadoClase=(estado)=>{
+    const e=(estado||'borrador').toLowerCase();
+    return e.replace(/[^a-z]/g,'');
+  };
+
+  panel.innerHTML=`
+    <div class="tg-account-panel" style="margin-top:18px">
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#d7ad45;font-weight:700">
+            Gestión de anuncios
+          </div>
+          <h2 style="margin:5px 0 4px">Mis anuncios</h2>
+          <p style="margin:0;color:#aaa">
+            Gestiona tus entradas publicadas y controla cada listado.
+          </p>
+        </div>
+
+        <button id="tgNuevoAnuncio"
+          style="background:#d7ad45;color:#111;border:0;border-radius:10px;padding:12px 18px;font-weight:800;cursor:pointer">
+          + Crear anuncio
+        </button>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:22px 0">
+        <div style="flex:1;min-width:220px">
+          <input id="tgBuscarAnuncio"
+            type="search"
+            placeholder="Buscar por evento o nº de listado..."
+            style="width:100%;box-sizing:border-box;background:#111;color:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:12px 14px">
+        </div>
+
+        <select id="tgFiltroEstado"
+          style="background:#111;color:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:12px 14px">
+          <option value="todos">Todos (${anuncios.length})</option>
+          <option value="activo">Activos</option>
+          <option value="borrador">Borradores</option>
+          <option value="pausado">Pausados</option>
+          <option value="vendido">Vendidos</option>
+          <option value="finalizado">Finalizados</option>
+        </select>
+      </div>
+
+      <div id="tgListaAnuncios"></div>
+    </div>
+  `;
+
+  const lista=document.getElementById('tgListaAnuncios');
+  const buscador=document.getElementById('tgBuscarAnuncio');
+  const filtro=document.getElementById('tgFiltroEstado');
+
+  function pintarAnuncios(){
+
+    const busqueda=(buscador.value||'').toLowerCase().trim();
+    const estadoFiltro=filtro.value;
+
+    const filtrados=anuncios.filter(a=>{
+      const ev=a.events||{};
+      const texto=[
+        a.listing_number ? `tg-${String(a.listing_number).padStart(6,'0')}` : '',
+        ev.nombre||'',
+        ev.recinto||'',
+        ev.ciudad||''
+      ].join(' ').toLowerCase();
+
+      const coincideBusqueda=!busqueda || texto.includes(busqueda);
+      const coincideEstado=estadoFiltro==='todos' ||
+        (a.estado||'borrador').toLowerCase()===estadoFiltro;
+
+      return coincideBusqueda && coincideEstado;
+    });
+
+    if(!filtrados.length){
+      lista.innerHTML=`
+        <div style="border:1px solid #353535;border-radius:14px;padding:35px 20px;text-align:center;color:#aaa">
+          No hay anuncios que coincidan con tu búsqueda.
+        </div>
+      `;
+      return;
+    }
+
+    lista.innerHTML=filtrados.map(a=>{
+
+      const ev=a.events||{};
+      const d=a.datos_entrada||{};
+      const cantidad=Number(a.cantidad||0);
+      const precio=Number(a.precio||0);
+      const total=cantidad*precio;
+      const numero=a.listing_number
+        ? `TG-${String(a.listing_number).padStart(6,'0')}`
+        : `TG-${String(a.id).padStart(6,'0')}`;
+
+      const estado=(a.estado||'borrador').toLowerCase();
+
+      return `
+        <article class="tg-listing-card"
+          data-id="${a.id}"
+          style="border:1px solid #383838;border-radius:16px;padding:18px;margin-top:14px;background:linear-gradient(145deg,#171717,#101010)">
+
+          <div style="display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap">
+
+            <div>
+              <div style="font-size:12px;color:#d7ad45;font-weight:800;letter-spacing:1px">
+                ${numero}
+              </div>
+
+              <h3 style="margin:6px 0 4px">
+                ${ev.nombre||'Evento'}
+              </h3>
+
+              <div style="color:#aaa;font-size:14px">
+                ${ev.recinto||'Recinto pendiente'}
+                ${ev.ciudad ? ' · '+ev.ciudad : ''}
+              </div>
+            </div>
+
+            <div style="align-self:flex-start">
+              <span style="display:inline-block;padding:6px 10px;border-radius:999px;background:#222;border:1px solid #444;font-size:12px;font-weight:800">
+                ${estadoTexto(estado)}
+              </span>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:18px">
+
+            <div>
+              <div style="font-size:11px;color:#777;text-transform:uppercase">Evento</div>
+              <strong>${formatoFecha(ev.fecha_evento)}</strong>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:#777;text-transform:uppercase">Entradas</div>
+              <strong>${cantidad}</strong>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:#777;text-transform:uppercase">Precio / entrada</div>
+              <strong>${precio.toFixed(2)} €</strong>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:#777;text-transform:uppercase">Total</div>
+              <strong>${total.toFixed(2)} €</strong>
+            </div>
+
+          </div>
+
+          <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #292929;color:#aaa;font-size:13px">
+            ${d.sector ? `<span>Sector: <strong>${d.sector}</strong></span>` : ''}
+            ${d.fila ? `<span>Fila: <strong>${d.fila}</strong></span>` : ''}
+            ${d.asiento ? `<span>Asiento: <strong>${d.asiento}</strong></span>` : ''}
+            <span>Publicado: <strong>${formatoFecha(a.created_at)}</strong></span>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+
+            <button data-listing-action="ver"
+              data-id="${a.id}"
+              style="background:#222;color:#fff;border:1px solid #444;border-radius:9px;padding:9px 13px;cursor:pointer">
+              Ver
+            </button>
+
+            ${estado==='activo' ? `
+              <button data-listing-action="pausar"
+                data-id="${a.id}"
+                style="background:#222;color:#fff;border:1px solid #444;border-radius:9px;padding:9px 13px;cursor:pointer">
+                Pausar
+              </button>
+            ` : ''}
+
+            ${estado==='pausado' ? `
+              <button data-listing-action="reactivar"
+                data-id="${a.id}"
+                style="background:#d7ad45;color:#111;border:0;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer">
+                Reactivar
+              </button>
+            ` : ''}
+
+            <button data-listing-action="editar"
+              data-id="${a.id}"
+              style="background:#222;color:#fff;border:1px solid #444;border-radius:9px;padding:9px 13px;cursor:pointer">
+              Editar
+            </button>
+
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  buscador.addEventListener('input',pintarAnuncios);
+  filtro.addEventListener('change',pintarAnuncios);
+
+  lista.addEventListener('click',async(e)=>{
+    const boton=e.target.closest('[data-listing-action]');
+    if(!boton) return;
+
+    const id=Number(boton.dataset.id);
+    const accion=boton.dataset.listingAction;
+    const anuncio=anuncios.find(x=>Number(x.id)===id);
+
+    if(!anuncio) return;
+
+    if(accion==='ver'){
+      alert(
+        `Listado ${anuncio.listing_number ? 'TG-'+String(anuncio.listing_number).padStart(6,'0') : 'TG-'+String(anuncio.id).padStart(6,'0')}\n\n`+
+        `${anuncio.events?.nombre||'Evento'}\n`+
+        `Cantidad: ${anuncio.cantidad}\n`+
+        `Precio: ${Number(anuncio.precio||0).toFixed(2)} €`
+      );
+      return;
+    }
+
+    if(accion==='editar'){
+      alert('El editor completo del anuncio lo añadiremos en el siguiente paso.');
+      return;
+    }
+
+    if(accion==='pausar' || accion==='reactivar'){
+
+      const nuevoEstado=accion==='pausar' ? 'pausado' : 'activo';
+
+      const {error}=await c
+        .from('listings')
+        .update({estado:nuevoEstado})
+        .eq('id',id)
+        .eq('user_id',u.id);
+
+      if(error){
+        alert('No se pudo actualizar el anuncio: '+error.message);
+        return;
+      }
+
+      anuncio.estado=nuevoEstado;
+      pintarAnuncios();
+    }
+  });
+
+  document.getElementById('tgNuevoAnuncio').addEventListener('click',()=>{
+    alert('El creador profesional de anuncios lo construiremos en el siguiente paso.');
+  });
+
+  pintarAnuncios();
+
+  return;
+}
   simple(n[0],n[1])
 };
 document.addEventListener('click',async e=>{const t=e.target.closest('#loginBtn,#accountBtn,#miCuentaBtn,[data-action="account"]');if(t){e.preventDefault();openAccount();return}const card=e.target.closest('[data-account-section]');if(!card)return;if(card.dataset.accountSection==='profile'){await profile();return}const m={listings:['Mis anuncios','Aquí aparecerán tus anuncios activos, vendidos, pausados y finalizados.'],sales:['Mis ventas','Consulta tus ventas abiertas, completadas y canceladas.'],payouts:['Pagos por recibir','Aquí aparecerán los importes de ventas completadas pendientes de pago.'],purchases:['Mis compras','Consulta tus compras, entradas recibidas e historial.'],'payment-methods':['Métodos de pago','Gestiona tus métodos de pago asociados a tus compras.'],notifications:['Notificaciones','Configura los avisos de compras, ventas, pagos y eventos.'],favorites:['Favoritos','Aquí aparecerán tus eventos favoritos y alertas.'],security:['Seguridad','Gestiona contraseña y seguridad de tu cuenta.'],documents:['Documentos','Aquí estarán tus facturas y comprobantes.']};const n=m[card.dataset.accountSection]||['Mi cuenta',''];simple(n[0],n[1])});
