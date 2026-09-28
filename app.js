@@ -8,8 +8,13 @@ const data=[
 ];
 
 const SUPABASE_URL = "https://frmhsqarbmthpkgfobdr.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_1eI48cMtpfmqIfbR3TF8fg_x1NKL3CH";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, CLAVE_PUBLICABLE_DE_SUPABASE);
+const SUPABASE_PUBLISHABLE_KEY = "TU_CLAVE_PUBLICABLE_ACTUAL";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
 window.supabaseClient = supabaseClient;
 const events=document.querySelector("#events"), toast=document.querySelector("#toast");
 function render(list){events.innerHTML=list.map(e=>`<article class="event"><div class="event-art ${e.cat==="concert"?"concert":""}"><span class="event-tag">${e.cat==="football"?"FÚTBOL":e.cat==="concert"?"CONCIERTO":"EVENTO"}</span></div><div class="event-body"><div class="event-date">${e.date}</div><h3>${e.name}</h3><p>${e.venue}</p><div class="event-foot"><div class="from">Desde<b>${e.price}</b></div><button class="buy" onclick="show('La ficha de ${e.name} estará disponible en la versión conectada.')">Ver entradas</button></div></div></article>`).join("")}
