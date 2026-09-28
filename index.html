@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TicketsGold — Entradas para grandes eventos</title>
+<meta name="description" content="TicketsGold: marketplace independiente para comprar y vender entradas de eventos.">
+<link rel="icon" href="assets/favicon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="header">
+  <a class="brand" href="#"><span class="brand-mark">TG</span><span>Tickets<span>Gold</span></span></a>
+  <nav><a href="#eventos">Eventos</a><a href="#como-funciona">Cómo funciona</a><a href="#vender">Vender entradas</a></nav>
+  <div class="header-actions"><button class="ghost" id="loginBtn">Iniciar sesión</button><button class="gold" onclick="location.href='#vender'">Vender entrada</button></div>
+  <button class="menu" id="menuBtn">☰</button>
+</header>
+
+<main>
+<section class="hero">
+ <div class="hero-copy">
+   <div class="pill"><span></span> MARKETPLACE DE ENTRADAS</div>
+   <h1>Tu evento.<br><em>Tu momento.</em></h1>
+   <p>Compra y vende entradas de forma sencilla, con precios claros y un proceso pensado para proteger cada operación.</p>
+   <div class="searchbox"><span>⌕</span><input id="search" placeholder="Busca Real Madrid, Champions, conciertos..."><button id="searchBtn">Buscar</button></div>
+   <div class="trust-row"><span>✓ Publicaciones revisadas</span><span>✓ Precios transparentes</span><span>✓ Pago seguro</span></div>
+ </div>
+ <div class="hero-visual">
+   <div class="stadium-card">
+    <div class="card-top"><span>PRÓXIMO GRAN EVENTO</span><b>REAL MADRID</b></div>
+    <div class="stadium-art"><div class="sun"></div><div class="stadium-lines"></div><div class="pitch"></div></div>
+    <div class="match"><div><strong>REAL MADRID</strong><small>Santiago Bernabéu</small></div><div class="vs">VS</div><div class="opponent"><strong>PRÓXIMO RIVAL</strong><small>Entradas disponibles</small></div></div>
+   </div>
+ </div>
+</section>
+
+<section class="section" id="eventos">
+ <div class="section-head"><div><div class="eyebrow">DESCUBRE</div><h2>Eventos destacados</h2></div><a href="#todos" class="view-all">Ver todos →</a></div>
+ <div class="filters"><button class="filter active" data-cat="all">Todos</button><button class="filter" data-cat="football">Fútbol</button><button class="filter" data-cat="concert">Conciertos</button><button class="filter" data-cat="other">Otros eventos</button></div>
+ <div class="events" id="events"></div>
+</section>
+
+<section class="how" id="como-funciona">
+ <div class="eyebrow">SENCILLO</div><h2>Así funciona TicketsGold</h2>
+ <div class="steps">
+  <article><div class="num">01</div><h3>Encuentra</h3><p>Busca el partido, concierto o evento que quieres vivir.</p></article>
+  <article><div class="num">02</div><h3>Elige</h3><p>Compara ubicación, precio y detalles de las entradas disponibles.</p></article>
+  <article><div class="num">03</div><h3>Compra</h3><p>Completa el pago y recibe las instrucciones de entrega.</p></article>
+ </div>
+</section>
+
+<section class="sell-section" id="vender">
+ <div class="sell-copy"><div class="eyebrow">PARA VENDEDORES</div><h2>¿No puedes ir?<br><em>Vende tu entrada.</em></h2><p>Publica tu entrada, indica sus datos y espera a que sea revisada. Tú decides el precio.</p><button class="gold large" id="sellBtn">Publicar una entrada</button></div>
+ <div class="sell-box"><div class="sell-icon">TG</div><h3>Vende con transparencia</h3><ul><li>Indica exactamente la ubicación.</li><li>Confirma que la entrada puede transferirse.</li><li>Conoce la comisión antes de publicar.</li><li>Recibe el importe según las condiciones de la operación.</li></ul></div>
+</section>
+
+<section class="newsletter"><div><div class="eyebrow">NO TE LO PIERDAS</div><h2>Entérate cuando aparezcan nuevas entradas.</h2></div><form id="newsletter"><input type="email" placeholder="Tu email" required><button class="gold">Avisarme</button></form></section>
+</main>
+
+<footer><div class="footer-main"><a class="brand" href="#"><span class="brand-mark">TG</span><span>Tickets<span>Gold</span></span></a><p>Marketplace independiente de entradas.</p><div class="footer-links"><a href="#">Términos</a><a href="#">Privacidad</a><a href="#">Cookies</a><a href="#">Contacto</a></div></div><div class="footer-bottom">© 2026 TicketsGold. No afiliado a Real Madrid C.F. ni a otros organizadores.</div></footer>
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body></html>
