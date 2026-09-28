@@ -152,11 +152,10 @@ window.tgOpenSection=async function(key){
       return;
     }
 
-    const {data,error}=await c
-      .from('listings')
-      ..select('id,cantidad,precio,datos_entrada,descripcion,estado,created_at,event_id')
-      .eq('user_id',u.id)
-      .order('created_at',{ascending:false});
+const {data,error}=await c.from('listings')
+  .select('id,cantidad,precio,datos_entrada,description,estado,created_at,events(nombre,recinto,ciudad,fecha_evento)')
+  .eq('user_id',u.id)
+  .order('created_at',{ascending:false});
 
     if(error){
       simple('Mis anuncios','No se pudieron cargar tus anuncios: '+error.message);
