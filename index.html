@@ -154,7 +154,7 @@ window.tgOpenSection=async function(key){
 
     const {data,error}=await c
       .from('listings')
-      .select('id,cantidad,precio,datos_entrada,descripcion,estado,created_at,eventos(nombre,recinto,ciudad,fecha_evento)')
+      ..select('id,cantidad,precio,datos_entrada,descripcion,estado,created_at,event_id')
       .eq('user_id',u.id)
       .order('created_at',{ascending:false});
 
