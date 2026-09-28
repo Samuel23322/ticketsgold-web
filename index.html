@@ -138,9 +138,77 @@ function simple(t,p){panel.innerHTML='<h2>'+t+'</h2><p>'+p+'</p>'}
 async function profile(){const c=client(),u=await user();if(!c||!u){simple('Perfil','Inicia sesión para gestionar tu perfil.');return}const r=await c.from('profiles').select('nombre,apellidos,telefono,pais,direccion,codigo_postal,ciudad,fecha_nacimiento').eq('user_id',u.id).maybeSingle();if(r.error){simple('Perfil','No se pudo cargar el perfil: '+r.error.message);return}const p=r.data||{};panel.innerHTML='<h2>Perfil</h2><p>Correo de acceso: <strong>'+u.email+'</strong></p><form id="tgProfileForm" class="tg-profile-form"><label>Nombre<input name="nombre" value="'+(p.nombre||'')+'"></label><label>Apellidos<input name="apellidos" value="'+(p.apellidos||'')+'"></label><label>Teléfono<input name="telefono" value="'+(p.telefono||'')+'"></label><label>País<input name="pais" value="'+(p.pais||'')+'"></label><label class="full">Dirección<input name="direccion" value="'+(p.direccion||'')+'"></label><label>Código postal<input name="codigo_postal" value="'+(p.codigo_postal||'')+'"></label><label>Ciudad<input name="ciudad" value="'+(p.ciudad||'')+'"></label><label>Fecha de nacimiento<input type="date" name="fecha_nacimiento" value="'+(p.fecha_nacimiento||'')+'"></label><div class="tg-profile-actions full"><button class="tg-save" type="submit">Guardar cambios</button><span id="tgProfileStatus" class="tg-profile-status"></span></div></form>';
 document.getElementById('tgProfileForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.currentTarget),status=document.getElementById('tgProfileStatus');status.textContent='Guardando...';const data={nombre:f.get('nombre')||null,apellidos:f.get('apellidos')||null,telefono:f.get('telefono')||null,pais:f.get('pais')||null,direccion:f.get('direccion')||null,codigo_postal:f.get('codigo_postal')||null,ciudad:f.get('ciudad')||null,fecha_nacimiento:f.get('fecha_nacimiento')||null};const q=await c.from('profiles').update(data).eq('user_id',u.id);status.textContent=q.error?'Error: '+q.error.message:'✓ Cambios guardados'}}
 window.tgOpenSection=async function(key){
-  if(key==='profile'){await profile();return}
-  const m={listings:['Mis anuncios','Aquí aparecerán tus anuncios activos, vendidos, pausados y finalizados.'],sales:['Mis ventas','Consulta tus ventas abiertas, completadas y canceladas.'],payouts:['Pagos por recibir','Aquí aparecerán los importes de ventas completadas pendientes de pago.'],purchases:['Mis compras','Consulta tus compras, entradas recibidas e historial.'],'payment-methods':['Métodos de pago','Gestiona tus métodos de pago asociados a tus compras.'],notifications:['Notificaciones','Configura los avisos de compras, ventas, pagos y eventos.'],favorites:['Favoritos','Eventos guardados y alertas.'],security:['Seguridad','Gestiona contraseña y sesiones.'],documents:['Documentos','Facturas y comprobantes.']};
-  const n=m[key]||['Mi cuenta','Selecciona una sección.'];simple(n[0],n[1]);
+  if(key==='profile'){
+    await profile();
+    return;
+  }
+
+  if(key==='listings'){
+    const c=client();
+    const u=await user();
+
+    if(!c||!u){
+      simple('Mis anuncios','Inicia sesión para gestionar tus anuncios.');
+      return;
+    }
+
+    const {data,error}=await c
+      .from('listings')
+      .select('id,cantidad,precio,datos_entrada,descripcion,estado,created_at,events(nombre,recinto,ciudad,fecha_evento)')
+      .eq('user_id',u.id)
+      .order('created_at',{ascending:false});
+
+    if(error){
+      simple('Mis anuncios','No se pudieron cargar tus anuncios: '+error.message);
+      return;
+    }
+
+    if(!data||!data.length){
+      simple('Mis anuncios','Todavía no tienes anuncios.');
+      return;
+    }
+
+    panel.innerHTML='<h2>🎟️ Mis anuncios</h2><p>Gestiona tus entradas publicadas.</p>'+
+      data.map(a=>{
+        const ev=a.events||{};
+        const d=a.datos_entrada||{};
+        const fecha=ev.fecha_evento
+          ? new Date(ev.fecha_evento).toLocaleString('es-ES',{dateStyle:'medium',timeStyle:'short'})
+          : '';
+
+        return `
+          <div class="tg-account-panel" style="margin-top:18px;border:1px solid #353535;border-radius:14px;padding:18px;">
+            <h3>${ev.nombre||'Evento'}</h3>
+            <p>${ev.recinto||''}${ev.ciudad?' · '+ev.ciudad:''}</p>
+            ${fecha?`<p>📅 ${fecha}</p>`:''}
+            <p><strong>${a.cantidad} entrada${a.cantidad===1?'':'s'}</strong> · <strong>${Number(a.precio).toFixed(2)} €</strong></p>
+            ${d.sector?`<div>📍 Sector/Zona: ${d.sector}</div>`:''}
+            ${d.fila?`<div>↔️ Fila: ${d.fila}</div>`:''}
+            ${d.asiento?`<div>💺 Asiento: ${d.asiento}</div>`:''}
+            ${d.tipo_entrada?`<div>🎟️ Tipo: ${d.tipo_entrada}</div>`:''}
+            ${d.entrega?`<div>📦 Entrega: ${d.entrega}</div>`:''}
+            <div style="margin-top:8px;">Estado: <strong>${a.estado}</strong></div>
+            ${a.descripcion?`<p>${a.descripcion}</p>`:''}
+          </div>
+        `;
+      }).join('');
+
+    return;
+  }
+
+  const m={
+    sales:['Mis ventas','Consulta tus ventas.'],
+    payouts:['Pagos por recibir','Consulta tus pagos pendientes y recibidos.'],
+    purchases:['Mis compras','Consulta tus compras.'],
+    payments:['Métodos de pago','Gestiona tus métodos de pago.'],
+    notifications:['Notificaciones','Gestiona tus notificaciones.'],
+    favorites:['Favoritos','Consulta tus favoritos.'],
+    security:['Seguridad','Gestiona contraseña y sesiones.'],
+    documents:['Documentos','Consulta tus facturas y comprobantes.']
+  };
+
+  const n=m[key]||['Mi cuenta','Selecciona una sección.'];
+  simple(n[0],n[1])
 };
 document.addEventListener('click',async e=>{const t=e.target.closest('#loginBtn,#accountBtn,#miCuentaBtn,[data-action="account"]');if(t){e.preventDefault();openAccount();return}const card=e.target.closest('[data-account-section]');if(!card)return;if(card.dataset.accountSection==='profile'){await profile();return}const m={listings:['Mis anuncios','Aquí aparecerán tus anuncios activos, vendidos, pausados y finalizados.'],sales:['Mis ventas','Consulta tus ventas abiertas, completadas y canceladas.'],payouts:['Pagos por recibir','Aquí aparecerán los importes de ventas completadas pendientes de pago.'],purchases:['Mis compras','Consulta tus compras, entradas recibidas e historial.'],'payment-methods':['Métodos de pago','Gestiona tus métodos de pago asociados a tus compras.'],notifications:['Notificaciones','Configura los avisos de compras, ventas, pagos y eventos.'],favorites:['Favoritos','Aquí aparecerán tus eventos favoritos y alertas.'],security:['Seguridad','Gestiona contraseña y seguridad de tu cuenta.'],documents:['Documentos','Aquí estarán tus facturas y comprobantes.']};const n=m[card.dataset.accountSection]||['Mi cuenta',''];simple(n[0],n[1])});
 close.onclick=closeAccount;logout.onclick=async()=>{const c=client();if(c)await c.auth.signOut();localStorage.removeItem('tg_user_email');closeAccount();alert('Has cerrado sesión.')};
