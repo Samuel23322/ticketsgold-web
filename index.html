@@ -434,6 +434,37 @@ window.tgOpenSection=async function(key){
 };
 document.addEventListener('click',async e=>{const t=e.target.closest('#loginBtn,#accountBtn,#miCuentaBtn,[data-action="account"]');if(t){e.preventDefault();openAccount();return}const card=e.target.closest('[data-account-section]');if(!card)return;if(card.dataset.accountSection==='profile'){await profile();return}const m={listings:['Mis anuncios','Aquí aparecerán tus anuncios activos, vendidos, pausados y finalizados.'],sales:['Mis ventas','Consulta tus ventas abiertas, completadas y canceladas.'],payouts:['Pagos por recibir','Aquí aparecerán los importes de ventas completadas pendientes de pago.'],purchases:['Mis compras','Consulta tus compras, entradas recibidas e historial.'],'payment-methods':['Métodos de pago','Gestiona tus métodos de pago asociados a tus compras.'],notifications:['Notificaciones','Configura los avisos de compras, ventas, pagos y eventos.'],favorites:['Favoritos','Aquí aparecerán tus eventos favoritos y alertas.'],security:['Seguridad','Gestiona contraseña y seguridad de tu cuenta.'],documents:['Documentos','Aquí estarán tus facturas y comprobantes.']};const n=m[card.dataset.accountSection]||['Mi cuenta',''];simple(n[0],n[1])});
 close.onclick=closeAccount;logout.onclick=async()=>{const c=client();if(c)await c.auth.signOut();localStorage.removeItem('tg_user_email');closeAccount();alert('Has cerrado sesión.')};
-})();
+})();document.addEventListener('click', function(e) {
+  const card = e.target.closest('[data-account-section]');
+  if (!card) return;
+
+  const seccion = card.dataset.accountSection;
+
+  const contenidos = {
+    profile: ['Perfil', 'Aquí podrás gestionar tus datos personales, correo y contraseña.'],
+    listings: ['Mis anuncios', 'Aquí aparecerán tus anuncios activos, vendidos, pausados y finalizados.'],
+    sales: ['Mis ventas', 'Aquí podrás consultar tus ventas abiertas, completadas y canceladas.'],
+    payouts: ['Pagos por recibir', 'Aquí aparecerán tus pagos pendientes y el historial de pagos.'],
+    purchases: ['Mis compras', 'Aquí aparecerán tus entradas compradas, recibidas y el historial.'],
+    payments: ['Métodos de pago', 'Aquí podrás gestionar tus métodos de pago.'],
+    notifications: ['Notificaciones', 'Aquí aparecerán tus avisos de ventas, compras, pagos y eventos.'],
+    favorites: ['Favoritos', 'Aquí aparecerán tus eventos guardados y alertas.'],
+    security: ['Seguridad', 'Aquí podrás gestionar tu contraseña y tus sesiones.'],
+    documents: ['Documentos', 'Aquí estarán tus facturas y comprobantes.']
+  };
+
+  const contenido = contenidos[seccion];
+
+  if (!contenido) return;
+
+  const panel = document.querySelector('.tg-account-panel');
+
+  if (panel) {
+    panel.innerHTML = `
+      <h2>${contenido[0]}</h2>
+      <p>${contenido[1]}</p>
+    `;
+  }
+});
 </script>
 </body></html>
