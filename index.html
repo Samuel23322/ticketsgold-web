@@ -76,5 +76,61 @@ document.querySelectorAll('.tg-account-card[data-account-section]').forEach(card
 close.onclick=closeAccount;logout.onclick=async()=>{const c=client();if(c)await c.auth.signOut();localStorage.removeItem('tg_user_email');closeAccount();alert('Has cerrado sesión.')};
 })();
 </script>
-</body></html>
 
+<script>
+(function(){
+  function accountPanel(){
+    return document.getElementById('tgAccountPanel');
+  }
+  async function clickCard(card){
+    var key=card.getAttribute('data-account-section');
+    var panel=accountPanel();
+    if(!panel) return;
+
+    if(key==='profile'){
+      if(typeof profile==='function'){
+        await profile();
+      } else {
+        panel.innerHTML='<h2>Perfil</h2><p>Abre tu perfil para gestionar tus datos personales.</p>';
+      }
+      return;
+    }
+
+    var data={
+      listings:['Mis anuncios','Aquí aparecerán tus anuncios activos, vendidos, pausados y finalizados.'],
+      sales:['Mis ventas','Consulta tus ventas abiertas, completadas y canceladas.'],
+      payouts:['Pagos por recibir','Aquí aparecerán los importes de ventas completadas pendientes de pago.'],
+      purchases:['Mis compras','Consulta tus compras, entradas recibidas e historial.'],
+      'payment-methods':['Métodos de pago','Gestiona los métodos de pago asociados a tus compras.'],
+      notifications:['Notificaciones','Configura los avisos de compras, ventas, pagos y eventos.'],
+      favorites:['Favoritos','Aquí aparecerán tus eventos favoritos y alertas.'],
+      security:['Seguridad','Gestiona contraseña y seguridad de tu cuenta.'],
+      documents:['Documentos','Aquí estarán tus facturas y comprobantes.']
+    };
+    var n=data[key] || ['Mi cuenta','Selecciona una sección.'];
+    panel.innerHTML='<h2>'+n[0]+'</h2><p>'+n[1]+'</p>';
+  }
+
+  function bind(){
+    document.querySelectorAll('.tg-account-card[data-account-section]').forEach(function(card){
+      card.onclick=function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        clickCard(card);
+      };
+      card.style.pointerEvents='auto';
+      card.style.position='relative';
+      card.style.zIndex='100000';
+      card.style.touchAction='manipulation';
+    });
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',bind);
+  }else{
+    bind();
+  }
+})();
+</script>
+
+</body></html>
