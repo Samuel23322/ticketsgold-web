@@ -8,7 +8,7 @@ const data=[
 ];
 
 const SUPABASE_URL = "https://frmhsqarbmthpkgfobdr.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "TU_CLAVE_PUBLICABLE_ACTUAL";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_1eI48cMtpfmqIfbR3TF8fg_x1NKL3CH";
 
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
